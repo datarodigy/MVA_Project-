@@ -1,0 +1,2 @@
+# MVA_Project-
+This project sets out to identify the factors that affect the Fuel Economy of Cars. This topic is very relevant given the increasingly Global call for reduction in green-house gas emission of which petroleum products such as fuel is a major source of it. Fuel economy, a measure of energy efficiency in vehicle (thereafter “Car”), plays a vital role in reducing consumption of traditional fuel and thereby also ultimately reducing green-house emissions.
