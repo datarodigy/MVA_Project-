@@ -1,0 +1,199 @@
+---
+title: "MVA_Project"
+output: html_document
+---
+
+```{r}
+auto_original.mpg <- read.table("auto-mpg.data-original", quote = "\"", comment.char = "")
+dim(auto_original.mpg)
+
+# Renaming all column names to their respective variable names.
+names(auto_original.mpg)
+
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V1"] <- "mpg"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V2"] <- "cylinders"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V3"] <- "displacement"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V4"] <- "horsepower"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V5"] <- "weight"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V6"] <- "acceleration"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V7"] <- "model year"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V8"] <- "origin"
+colnames(auto_original.mpg)[colnames(auto_original.mpg) == "V9"] <- "car name "
+head(auto_original.mpg)
+
+# Converting auto_original.mpg to a CSV file
+write.csv(auto_original.mpg,'auto_original.mpg.csv') 
+autooriginalmpg <- read.csv("auto_original.mpg.csv") 
+head(autooriginalmpg)
+
+# autooriginalmpg Exported to be modified in python in order to get row names
+write.csv(autooriginalmpg, "autooriginalmpg .csv")
+# Data imported with row names as original_mpg
+original <- read.csv("original.csv", row.names = 1)
+head(original)
+
+# not including car.name because it is a string because we are findind correl ation
+ori_data <- original[,c(1:6)]
+rownames(ori_data) <- NULL
+head(ori_data)
+
+corr <- cor(scale(ori_data)) #correlation matrix corr
+corr
+ori_data2 <- ori_data
+for(q in 1:ncol(ori_data2)){
+ori_data2[is.na(ori_data2[, q]), q] <- median(ori_data2[, q], na.rm = TRUE)
+ }
+corr2 <- cor(scale(ori_data2)) # Correlation matrix corr2
+
+summary(ori_data2)
+
+plot(ori_data2$cylinders, ori_data2$mpg,
+main = "Fig1: Scatterplot for MPG vs Cylinders ", xlab = "Cylinders", ylab = "mpg")
+
+plot(ori_data2$displacement, ori_data2$mpg,
+main = "Fig2: Scatterplot for MPG vs displacement ",
+ xlab = "displacement" , ylab = "mpg")
+
+plot(ori_data2$horsepower, ori_data2$mpg,
+main = "Fig3: Scatterplot for MPG vs horsepower ",
+xlab = "horsepower" , ylab = "mpg")
+ 
+plot(ori_data2$acceleration, ori_data2$mpg,
+main = "Fig5: Scatterplot for MPG vs acceleration ",
+xlab = "acceleration", ylab = "mpg")
+
+auto_original2 <- (original[,c(1:8)])
+for(q in 1:ncol(auto_original2)){
+auto_original2[is.na(auto_original2[, q]), q] <- median(auto_original2[, q], na.rm = TRUE)
+}
+data_scale <- scale(auto_original2[,c(1:8)]) 
+head(data_scale)
+
+pc_data <- princomp(data_scale, cor = T) 
+summary(pc_data, loadings = T)
+biplot(pc_data, cex = 0.9)
+k_meansc <- kmeans(data_scale, centers = 3) # Applying kmeans for k=3 cluster s table(km$cluster)
+table(k_meansc$cluster)
+
+plot.wgss = function(data_scale, maxc) { wss = numeric(maxc)
+  for (i in 1:maxc)
+    wss[i] = kmeans(data_scale, centers = i, nstart = 10)$tot.withinss 
+  plot(1:maxc, wss, type = "b", xlab = "Number of Clusters", ylab = "Within g
+roups sum of squares", main = "Fig6: Scree Plot for data_scale") }
+plot.wgss(data_scale, 20) # Elbow test.
+
+km2 <- kmeans(data_scale,centers = 3,nstart = 10) 
+table(km2$cluster)
+
+# group
+km2$centers
+
+tab <- km2$cluster
+
+grt <- data.frame(tab) 
+subset(data_scale,tab = 3, nstart = 10)
+
+
+data_scale2 <- data_scale
+
+dis_mat = dist(data_scale2) # creating the distance matrix #class(dis_mat)
+
+hhc <- hclust(dis_mat, "complete")
+plot(hhc, main = "Fig. 7: Complete Linkage HC Dendogram")
+
+library(mclust)
+mcl <- Mclust(data_scale,3) 
+summary(mcl)
+mcct <- table(mcl$classification) ## identifies 3 groups
+plot(mcl, what = "classification", cex = 0.4)
+plot(mcl, what = "BIC")
+
+grm <- data.frame(mcct) 
+grm
+
+#subset(data_scale2,grm == 1)## countries in each group
+# checking for BIC plot because we have too many clusters # Accelration vs mpg
+plot(mcl, what = "BIC")
+
+plot(mcl, what = "uncertainty", dimens = c(1,6)) 
+text(mcl$data[,c(1,6)], labels = abbreviate(rownames(data_scale)),col = mcl
+$classification)
+clust.data = cbind(rownames(data_scale), mcl$classification, mcl$uncertainty )
+clust.data[order(mcl$uncertainty),]
+
+# checking for BIC plot because we have too many clusters # Weight vs mpg
+plot(mcl, what = "BIC")
+
+plot(mcl, what = "uncertainty", dimens = c(1,5)) #
+text(mcl$data[,c(1,5)], labels = abbreviate(rownames(data_scale)), col = mcl
+$classification)
+
+clust.data = cbind(rownames(data_scale), mcl$classification, mcl$uncertainty )
+clust.data[order(mcl$uncertainty),]
+
+
+# EFA (2 factors)
+mpg.efa <- factanal(auto_original2, factors = 2) 
+mpg.efa
+
+faLR <- mpg.efa$loadings[,1:2] 
+faLR
+
+print(mpg.efa$loadings, cut = 0.5)
+
+# EFA for CFA insight
+data_cfa <- auto_original2[c(1:6)] # includes only numerical variables 
+data_cfa2 <- factanal(data_cfa, factors = 2)
+
+faLR2 <- data_cfa2$loadings[,1:2] 
+faLR2
+
+print(data_cfa2$loadings, cut = 0.5)
+
+# CFA
+install.packages("sem")
+install.packages("semPlot")
+library("sem")
+data_cfamodel <- specifyModel(text = " 
+Size -> mpg, lambda1, NA
+Size -> cylinders, lambda2, NA 
+Size -> displacement, lambda3, NA 
+Size -> weight, lambda4, NA
+Perf -> horsepower, lambda5, NA
+Perf  -> acceleration, lambda6, NA
+
+Size <-> Perf, rho, NA
+mpg <-> mpg, theta1, NA
+cylinders <-> cylinders, theta2, NA 
+displacement <-> displacement, theta3, NA 
+weight <-> weight, theta4, NA
+horsepower <-> horsepower, theta5, NA 
+acceleration <-> acceleration, theta6, NA
+Size <-> Size, NA, 1 
+Perf <-> Perf, NA, 1 ")
+
+cfamodel_sem <- sem(data_cfamodel, cor(data_cfa), nrow(data_cfa)) 
+summary(cfamodel_sem)
+
+
+library(Rcpp) 
+library(DiagrammeR) 
+pathDiagram(cfamodel_sem)
+library(semPlot)
+semPaths(cfamodel_sem, rotation = 2, 'std', 'est')
+options(fit.indices = c("SRMR", "GFI", "AGFI")) # Some fit indices 
+criteria = summary(cfamodel_sem)
+criteria$SRMR
+criteria$GFI
+criteria$AGFI
+criteria$SRMR < 0.05
+criteria$GFI > 0.95
+criteria$AGFI > 0.95
+parameters = summary(cfamodel_sem) 
+parameters$coeff
+parameters$coeff[7,]$Estimate 
+coef.Lower = parameters$coeff[8,]$Estimate - 1.96 * parameters$coeff[8,]$`Std Error`
+coef.Upper = parameters$coeff[8,]$Estimate + 1.96 * parameters$coeff[8,]$`Std Error`
+coef.Lower
+coef.Upper
+```
